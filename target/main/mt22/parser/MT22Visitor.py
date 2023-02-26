@@ -14,11 +14,6 @@ class MT22Visitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MT22Parser#declarations.
-    def visitDeclarations(self, ctx:MT22Parser.DeclarationsContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by MT22Parser#declaration.
     def visitDeclaration(self, ctx:MT22Parser.DeclarationContext):
         return self.visitChildren(ctx)
@@ -89,8 +84,8 @@ class MT22Visitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MT22Parser#statements.
-    def visitStatements(self, ctx:MT22Parser.StatementsContext):
+    # Visit a parse tree produced by MT22Parser#blockItem.
+    def visitBlockItem(self, ctx:MT22Parser.BlockItemContext):
         return self.visitChildren(ctx)
 
 
@@ -201,6 +196,11 @@ class MT22Visitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MT22Parser#functionCall.
     def visitFunctionCall(self, ctx:MT22Parser.FunctionCallContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MT22Parser#literal.
+    def visitLiteral(self, ctx:MT22Parser.LiteralContext):
         return self.visitChildren(ctx)
 
 

@@ -1,1 +1,1 @@
-a,Error Token ?
+str,:,string,=,Hello \n\tWorld!,;,<EOF>

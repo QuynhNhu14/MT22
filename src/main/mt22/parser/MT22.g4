@@ -1,3 +1,4 @@
+//2011780
 grammar MT22;
 
 @lexer::header {
@@ -8,15 +9,10 @@ options{
 	language=Python3;
 }
 
-program: declarations EOF ;
-
-declarations
-    :   declaration+
-    ;
+program: declaration? EOF ;
 
 declaration
-    :   variableDeclaration
-    |   functionDeclaration
+    :   (variableDeclaration | functionDeclaration)+
     ;
 
 variableDeclaration
@@ -33,8 +29,8 @@ longDeclaration
     ;
 
 initializer
-    :   expression
-    |   LeftBrace initializer+ RightBrace
+    :   expressions
+    |   LeftBrace initializer (Comma initializer)* RightBrace
     ;
 
 identifiers
@@ -49,14 +45,14 @@ typeName
     ;
 
 atomicType
-    :   Boolean
+    :   Boolean_
     |   Integer
     |   Float
     |   String
     ;
 
 arrayType
-    :   Array LeftBracket IntegerConstant (Comma IntegerConstant)* RightBracket Of atomicType
+    :   Array LeftBracket (IntegerConstant (Comma IntegerConstant)*)? RightBracket Of atomicType
     ;
 
 parameter
@@ -68,19 +64,19 @@ functionDeclaration
     ;
 
 functionPrototype
-    :   Identifier Colon Function typeName LeftParen parameters RightParen (Inherit Identifier)?
+    :   Identifier Colon Function typeName LeftParen parameters? RightParen (Inherit Identifier)?
     ;
 
 parameters
-    :   parameter*
+    :   parameter (Comma parameter)*
     ;
 
 blockStatement
-    :   LeftBracket (statements | variableDeclaration)* RightBracket
+    :   LeftBrace blockItem* RightBrace
     ;
 
-statements
-    :   statement+
+blockItem
+    :   statement | variableDeclaration
     ;
 
 statement
@@ -97,15 +93,15 @@ statement
     ;
 
 assignmentStatement
-    : expressions Semi
+    : expressions? Semi
     ;
 
 ifStatement
-    : If LeftParen expressions RightParen statements (Else statements)?
+    : If LeftParen expressions RightParen statement (Else statement)?
     ;
 
 forStatement
-    : For LeftParen identifiers RightParen
+    : For LeftParen expressions RightParen
     ;
 
 whileStatement
@@ -182,7 +178,7 @@ postfixExpression
     ;
 
 primaryExpression
-    :   Literal
+    :   literal
     |   Identifier
     |   functionCall
     |   LeftParen expressions RightParen
@@ -192,7 +188,12 @@ functionCall
     :   Identifier LeftParen expressions? RightParen
     ;
 
-
+literal
+    :   IntegerConstant
+    |   FloatingConstant
+    |   BooleanConstant
+    |   StringConstant
+    ;
 
 
 
@@ -208,52 +209,35 @@ LineComment
     ;
 
 //LITERALS
-Literal
-    :   (IntegerConstant (Under IntegerConstant)*
-    |   FloatingConstant) {self.text=self.text.replace("_","")}
-    ;
 
 IntegerConstant
-    :   DecimalConstant
+    :   DecimalConstant {self.text=self.text.replace("_","")}
+    ;
+
+FloatingConstant
+    :   DecimalFloatingConstant {self.text=self.text.replace("_","")}
     ;
 
 fragment
 DecimalConstant
-    :   NonzeroDigit Digit*
-    ;
-
-fragment
-NonzeroDigit
-    :   [1-9]
-    ;
-
-FloatingConstant
-    :   DecimalFloatingConstant
+    :   '0'
+    |   NonzeroDigit (Under? Digit)*
     ;
 
 fragment
 DecimalFloatingConstant
     :   FractionalConstant ExponentPart?
-    |   DigitSequence ExponentPart
+    |   DecimalConstant ExponentPart
     ;
 
 fragment
 FractionalConstant
-    :   DigitSequence? (Under DigitSequence)* '.' DigitSequence
-    |   DigitSequence (Under DigitSequence)*  '.'
+    :   DecimalConstant '.' Digit*
     ;
 
 fragment
 ExponentPart
-    :   [eE] Sign? DigitSequence
-    ;
-fragment
-Sign
-    :   [+-]
-    ;
-
-DigitSequence
-    :   Digit+
+    :   [eE] Sign? Digit+
     ;
 
 fragment
@@ -264,17 +248,11 @@ CChar
 
 fragment
 EscapeSequence
-    :   SimpleEscapeSequence
+    :   '\\' ['"bfnrt\\]
     ;
 
-fragment
-SimpleEscapeSequence
-    :   '\\' ['"?abfnrtv\\]
-    ;
-
-
-StringLiteral
-    :   '"' SCharSequence? '"'
+StringConstant
+    :   '"' SCharSequence? '"' {self.text=self.text[1:-1]}
     ;
 
 fragment
@@ -291,7 +269,7 @@ SChar
     ;
 
 //BOOLEAN
-Boolean: True_ | False_;
+BooleanConstant: True_ | False_;
 
 //KEYWORDS
 Auto: 'auto' ;
@@ -355,10 +333,26 @@ Digit
     :   [0-9]
     ;
 
+fragment
+NonzeroDigit
+    :   [1-9]
+    ;
+
+fragment
+Sign
+    :   [+-]
+    ;
 
 WS : [ \b\f\t\r\n]+ -> skip ; // skip spaces, tabs, newlines
 
 
 ERROR_CHAR: .{raise ErrorToken(self.text)};
-UNCLOSE_STRING: .;
-ILLEGAL_ESCAPE: .;
+UNCLOSE_STRING: '"' SChar* (EOF? | ~'"') {
+	if self.text[-1] in ['\r','\n']:
+		raise UncloseString(self.text[1:-1])
+	else: raise UncloseString(self.text[1:])
+};
+
+ILLEGAL_ESCAPE: '"' SChar* '\\' ~[bfrnt"\\]{
+	raise IllegalEscape(self.text[1:])
+};
