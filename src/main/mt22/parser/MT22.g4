@@ -101,11 +101,11 @@ ifStatement
     ;
 
 forStatement
-    : For LeftParen expressions RightParen
+    : For LeftParen expressions RightParen statement
     ;
 
 whileStatement
-    :   While LeftParen expressions RightParen
+    :   While LeftParen expressions RightParen statement
     ;
 
 do_whileStatement
@@ -194,8 +194,6 @@ literal
     |   BooleanConstant
     |   StringConstant
     ;
-
-
 
 //COMMENT
 BlockComment
